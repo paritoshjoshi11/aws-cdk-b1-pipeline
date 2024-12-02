@@ -1,21 +1,19 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { AwsCdkB1LevelProjStack } from '../lib/aws-cdk-b1-level-proj-stack';
+
+import { s3EnvironmentConfig, SimpleStroageSysConfig } from '../lib/config/s3-config';
+import { config } from 'process';
+import { AwsCdkS3Stack } from '../lib/stack/s3-stack';
 
 const app = new cdk.App();
-new AwsCdkB1LevelProjStack(app, 'AwsCdkB1LevelProjStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+const s3Config = new SimpleStroageSysConfig();
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+s3Config.environments.forEach((env) => {
+    createS3Resources(env)
+})
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
+function createS3Resources(env : s3EnvironmentConfig){
+    new AwsCdkS3Stack(app,env)
+}
