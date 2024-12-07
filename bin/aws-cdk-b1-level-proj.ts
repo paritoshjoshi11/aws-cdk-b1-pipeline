@@ -6,7 +6,6 @@ import { s3EnvironmentConfig, SimpleStroageSysConfig } from '../lib/config/s3-co
 import { DeploymentConfig, DeploymentConfigs } from '../lib/config/cdk-deployment-configs';
 import { AwsCdkS3Stack } from '../lib/stack/s3-stack';
 import { SqsStack } from '../lib/stack/sqs-stack';
-import { NotificationStack } from '../lib/stack/notification-stack';
 
 const app = new cdk.App();
 const s3Config = new SimpleStroageSysConfig();
@@ -22,16 +21,6 @@ s3Config.environments.forEach((env) => {
 // Create Lambda resources and associated Notification Stack for each deployment config
 deploymentConfig.deploymentConfigs.forEach((env: DeploymentConfig) => {
   const sqsStack = createSqsStack(env); // Create an SQS stack for the environment
-  
-  // Retrieve the correct S3 stack for this environment
-  const s3Stack = s3Stacks.find(stack => stack.stackName.includes(env.environmentTag));
-
-  if (s3Stack) {
-    const targetBucket = getTargetBucket(s3Stack, env.accountRegion); // Get the specific bucket
-    if (targetBucket) {
-      createNotificationStack(env.environmentTag, targetBucket, sqsStack); // Create the Notification Stack
-    }
-  }
 });
 
 function createS3Resources(env: s3EnvironmentConfig): AwsCdkS3Stack {
@@ -44,15 +33,6 @@ function getTargetBucket(s3Stack: AwsCdkS3Stack, environmentTag: string): s3.Buc
   const bucketName = `datalake-b1-landing-${environmentTag}`;
   const buckets = s3Stack.node.findAll().filter((node) => node instanceof s3.Bucket) as s3.Bucket[];
   return buckets.find((bucket) => bucket.bucketName === bucketName);
-}
-
-function createNotificationStack(
-  environmentTag: string,
-  bucket: s3.Bucket,
-  sqsStack: SqsStack
-) {
-  // Create a Notification stack that associates the S3 bucket with the SQS queue
-  new NotificationStack(app, environmentTag, bucket, sqsStack);
 }
 
 function createSqsStack(config: DeploymentConfig): SqsStack {

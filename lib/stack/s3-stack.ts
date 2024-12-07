@@ -4,6 +4,8 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import { S3BucketProps } from '../config/common/s3-bucket-config'; 
 import { IResourcePolicyProps } from '../config/common/s3-bucket-policy-config';
 import { GlobalStack } from './global-stack';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications'; 
 
 export class AwsCdkS3Stack extends GlobalStack {
 
@@ -32,6 +34,19 @@ export class AwsCdkS3Stack extends GlobalStack {
           removalPolicy : cdk.RemovalPolicy.DESTROY
         }
       )
+      // Only configure event notification for the specific bucket 'sdjklm'
+      if (bucket.bucketName === 'datalake-b1-landing-us') {
+        // Create SQS Queue
+        const sqsQueue = new sqs.Queue(this, `${bucket.bucketName}Queue`, {
+          queueName: `${bucket.bucketName}Queue`,
+        });
+
+        // Add S3 bucket event notification to trigger the SQS queue
+        s3Bucket.addEventNotification(
+          s3.EventType.OBJECT_CREATED, // Trigger on object created
+          new s3n.SqsDestination(sqsQueue) // Target is SQS Queue
+        );
+      }
     })
 
   }
